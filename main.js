@@ -293,4 +293,5 @@ app.on('ready', function() {
   autoUpdater.setFeedURL('http://updates.openbazaar.org:5000/update/' + platform + '/' + version);
   autoUpdater.checkForUpdates();
 
+
 });
