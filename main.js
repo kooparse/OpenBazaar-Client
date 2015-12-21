@@ -275,7 +275,7 @@ app.on('ready', function() {
   });
 
   autoUpdater.on("error", function(err, msg) {
-    mainWindow.webContents.executeJavaScript("console.log('Error with Update: " + msg + "');");
+    console.log(msg); //print msg , you can find the cash reason.
   });
 
   autoUpdater.on("update-not-available", function(msg) {
@@ -292,5 +292,6 @@ app.on('ready', function() {
 
   autoUpdater.setFeedURL('http://updates.openbazaar.org:5000/update/' + platform + '/' + version);
   autoUpdater.checkForUpdates();
+
 
 });
