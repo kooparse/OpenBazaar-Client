@@ -8,11 +8,11 @@ var fs = require('fs');
 var path = require('path');
 
 var app = require('app');  // Module to control application life.
-var BrowserWindow = require('electron').BrowserWindow;  // Module to create native browser window.
+var electron = require('electron');
+var BrowserWindow = electron.BrowserWindow;  // Module to create native browser window.
 var request = require('request');
 var os = require('os');
 var autoUpdater = require('auto-updater');
-var electron = require('electron');
 var menu = require('menu');
 var tray = require('tray');
 
@@ -26,14 +26,16 @@ var version = app.getVersion();
 var trayMenu = null;
 var subpy = null;
 
-var start_local_server = function() {
-  var platform = process.platform;
+var open_url = null; // This is for if someone opens a URL before the client is open
 
-  if(platform == "darwin" || platform == "linux") {
+var start_local_server = function() {
+
+  if(platform == "mac" || platform == "linux") {
     subpy = require('child_process').spawn('./openbazaard', ['start', '--testnet', '--loglevel', 'debug'], {
       detach: true,
-      cwd: __dirname + '/OpenBazaar-Server'
+      cwd: __dirname + path.sep + '..' + path.sep + 'OpenBazaar-Server'
     });
+
     var stdout = '';
     var stderr = '';
 
@@ -45,7 +47,7 @@ var start_local_server = function() {
       console.log('[STR] stderr "%s"', String(buf));
       stderr += buf;
     });
-    subpy.on('error', function(err) {
+    subpy.on('error', function (err) {
       console.log('Python error %s', String(err));
     });
     subpy.on('close', function (code) {
@@ -58,9 +60,8 @@ var start_local_server = function() {
 };
 
 // Check if we need to kick off the python server-daemon (Desktop app)
-if(fs.existsSync(__dirname + path.sep + "OpenBazaar-Server")) {
+if(fs.existsSync(__dirname + path.sep + ".." + path.sep + "OpenBazaar-Server" + daemon)) {
   launched_from_installer = true;
-
   console.log('Starting OpenBazaar Server');
   start_local_server();
 }
@@ -102,12 +103,15 @@ app.on('before-quit', function (e) {
 app.on('ready', function() {
 
   //var protocol = require('protocol');
-  //protocol.registerProtocol('ob', function(request) {
+  //protocol.registerBufferProtocol('ob', function(request, callback) {
   //  var url = request.url.substr(5);
   //  console.log(path.normalize(__dirname + '/' + url));
+  //  callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')});
   //}, function (error) {
-  //  if (error)
-  //    console.error('Failed to register protocol')
+  //  if (error) {
+  //    console.error('Failed to register protocol');
+  //    console.error(error);
+  //  }
   //});
 
   // Application Menu
@@ -122,18 +126,6 @@ app.on('ready', function() {
             app.quit();
           }
         }
-      ]
-    },
-    {
-      label: 'Edit',
-      submenu: [
-        { label: "Undo", accelerator: "CmdOrCtrl+Z", selector: "undo:" },
-        { label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", selector: "redo:" },
-        { type: "separator" },
-        { label: "Cut", accelerator: "CmdOrCtrl+X", selector: "cut:" },
-        { label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:" },
-        { label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:" },
-        { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" }
       ]
     },
     {
@@ -176,7 +168,29 @@ app.on('ready', function() {
           }
         },
       ]
-    }
+    },
+    {
+    label: 'Window',
+    submenu: [
+      {
+        label: 'Minimize',
+        accelerator: 'Command+M',
+        selector: 'performMiniaturize:'
+      },
+      {
+        label: 'Close',
+        accelerator: 'Command+W',
+        selector: 'performClose:'
+      },
+      {
+        type: 'separator'
+      },
+      {
+        label: 'Bring All to Front',
+        selector: 'arrangeInFront:'
+      }
+    ]
+  }
   ]);
   menu.setApplicationMenu(appMenu);
 
@@ -264,7 +278,7 @@ app.on('ready', function() {
     mainWindow.webContents.send('ping', 'Update available!');
   });
 
-  autoUpdater.setFeedUrl('http://updates.openbazaar.org:5000/update/' + platform + '/' + version);
+  autoUpdater.setFeedURL('http://updates.openbazaar.org:5000/update/' + platform + '/' + version);
   autoUpdater.checkForUpdates();
 
 });
